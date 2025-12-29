@@ -48,6 +48,10 @@ export default function DashboardClient({
       scrollBox.style.maxHeight = "none";
       scrollBox.style.height = "auto";
 
+      // 레이아웃 반영
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
       // ✅ "전체 폭/높이" 측정
       const fullW = scrollBox.scrollWidth + 10;   // 전체 가로
       const fullH = scrollBox.scrollHeight + 10;  // 전체 세로
@@ -56,10 +60,6 @@ export default function DashboardClient({
       tableEl.style.maxWidth = "none";
       tableEl.style.width = `${fullW}px`;
       tableEl.style.minWidth = `${fullW}px`;
-
-      // 레이아웃 반영
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
 
       const dataUrl = await htmlToImage.toPng(tableEl, {
         cacheBust: true,
