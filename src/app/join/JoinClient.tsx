@@ -34,6 +34,29 @@ export default function JoinClient() {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login?next=${next}`;
+        return;
+      }
+
+    // ✅ 초대코드가 있으면, 이미 가입됐는지 확인
+    const code = sp.get("code") ?? "";
+        if (code) {
+          const { data: joined, error } = await sb.rpc("is_joined_by_code", { p_join_code: code });
+          if (!error && joined) {
+            router.replace("/app");
+            return;
+          }
+        }
+
+        setChecking(false);
+      })();
+  }, []);
+
   async function onSubmit() {
     setMsg(null);
     if (!code.trim()) return setMsg("초대코드를 입력해주세요.");
