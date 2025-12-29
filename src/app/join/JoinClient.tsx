@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -9,10 +9,30 @@ export default function JoinClient() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const [code, setCode] = useState(sp.get("code") ?? "");
+  const [checking, setChecking] = useState(true);
+  const [code, setCode] = useState("");
   const [nickname, setNickname] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const codeFromUrl = sp.get("code") ?? "";
+
+  useEffect(() => {
+    setCode(codeFromUrl);
+  }, [codeFromUrl]);
+
+  // ✅ 로그인 안 했으면 login으로 이동
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login?next=${next}`;
+        return;
+      }
+      setChecking(false);
+    })();
+  }, []);
 
   async function onSubmit() {
     setMsg(null);
@@ -36,6 +56,10 @@ export default function JoinClient() {
 
     setMsg("요청이 접수됐습니다! 운영자가 승인하면 크루가 표시됩니다.");
     router.push("/app");
+  }
+
+  if (checking) {
+    return <div style={{ padding: 16, color: "black" }}>확인중...</div>;
   }
 
   return (
