@@ -49,8 +49,8 @@ export default function DashboardClient({
       scrollBox.style.height = "auto";
 
       // ✅ "전체 폭/높이" 측정
-      const fullW = scrollBox.scrollWidth;   // 전체 가로
-      const fullH = scrollBox.scrollHeight;  // 전체 세로
+      const fullW = scrollBox.scrollWidth + 10;   // 전체 가로
+      const fullH = scrollBox.scrollHeight + 10;  // 전체 세로
 
       // ✅ 캡처 대상 DOM을 강제로 전체 폭으로
       tableEl.style.maxWidth = "none";
@@ -131,8 +131,26 @@ export default function DashboardClient({
         }}
       >
         {/* ✅ 실제 캡처 대상(표 전체) */}
-        <div ref={tableRef} style={{ background: "white", color: "black" }}>
+        <div ref={tableRef} style={{ background: "white", color: "black", padding: "10px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: 12,
+            }}
+          >
+            <div style={{ marginBottom: "10px" }}>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>2025 참여 현황</div>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>
+                기준일 : {new Date().toISOString().slice(0, 10)}
+              </div>
+            </div>
+          </div>
           {children}
+          <div style={{ fontSize: 12, opacity: 0.75, color: "red", marginTop: "5px" }}>
+            ※ 참여 횟수는 단톡방 내 게시된 클라이밍 일정에 2명 이상 참여하였을 때 적용됩니다. (개인 일정 혹은 클라이밍 외 일정 적용X)
+          </div>
         </div>
       </div>
     </div>

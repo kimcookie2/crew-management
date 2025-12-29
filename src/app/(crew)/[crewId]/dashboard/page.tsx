@@ -67,64 +67,64 @@ export default async function Dashboard({
 
   return (
     <DashboardClient title={title}>
-    <div style={{ padding: 0 }}>
-      <div className={styles.tableWrap}>
-        <table className={styles.crewTable}>
-          <thead>
-            <tr style={{ background: "#0b4aa2", color: "white" }}>
-              <th rowSpan={2} style={{...th, width: "1%"}}>구분</th>
-              <th rowSpan={2} style={{...th, width: "10%"}}>닉네임</th>
-              <th rowSpan={2} style={{...th, width: "12%"}}>입장 일자</th>
-              <th rowSpan={2} style={{...th, width: "10%"}}>최근 참여 일자</th>
-              <th rowSpan={2} style={{...th, width: "8%"}}>남은 활동<br/>유지 기간</th>
-              <th rowSpan={2} style={{...th, width: "6%"}}>총 참여<br/>횟수</th>
-              <th rowSpan={2} style={{...th, width: "6%"}}>참여<br/>순위</th>
-              <th style={{...th, width: "8%"}}>{monthLabel}</th>
-              <th style={{...th, width: "8%"}}>{prevLabel}</th>
-              <th rowSpan={2} style={th}>비고</th>
-            </tr>
-            <tr style={{ background: "#0b4aa2", color: "white" }}>
-              <th style={thSub}>{monthEvents}회</th>
-              <th style={thSub}>{prevEvents}회</th>
-            </tr>
-          </thead>
+      <div style={{ padding: 0 }}>
+        <div className={styles.tableWrap}>
+          <table className={styles.crewTable}>
+            <thead>
+              <tr style={{ background: "#0b4aa2", color: "white" }}>
+                <th rowSpan={2} style={{...th, width: "1%"}}>구분</th>
+                <th rowSpan={2} style={{...th, width: "10%"}}>닉네임</th>
+                <th rowSpan={2} style={{...th, width: "12%"}}>입장 일자</th>
+                <th rowSpan={2} style={{...th, width: "10%"}}>최근 참여 일자</th>
+                <th rowSpan={2} style={{...th, width: "8%"}}>남은 활동<br/>유지 기간</th>
+                <th rowSpan={2} style={{...th, width: "6%"}}>총 참여<br/>횟수</th>
+                <th rowSpan={2} style={{...th, width: "6%"}}>참여<br/>순위</th>
+                <th style={{...th, width: "8%"}}>{monthLabel}</th>
+                <th style={{...th, width: "8%"}}>{prevLabel}</th>
+                <th rowSpan={2} style={th}>비고</th>
+              </tr>
+              <tr style={{ background: "#0b4aa2", color: "white" }}>
+                <th style={thSub}>{monthEvents}회</th>
+                <th style={thSub}>{prevEvents}회</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            {rows.map((r:any, idx:number) => {
-              const isHold = r.status && r.status !== "active";
-              const remain = isHold ? "정지" : (r.remain_days ?? "").toString();
+            <tbody>
+              {rows.map((r:any, idx:number) => {
+                const isHold = r.status && r.status !== "active";
+                const remain = isHold ? "정지" : (r.remain_days ?? "").toString();
 
-              const bg = isHold ? "#e5e7eb" : idx % 2 === 0 ? "#eaf2ff" : "white";
+                const bg = isHold ? "#e5e7eb" : idx % 2 === 0 ? "#eaf2ff" : "white";
 
-              return (
-                <tr
-                  key={r.membership_id}
-                  style={{
-                    background: bg,
-                    borderTop: "1px solid #d7dbe3",
-                    color: "black",
-                  }}
-                >
-                  <td style={tdCenter}>{idx + 1}</td>
-                  <td style={tdCenter}>
-                    {r.role === "admin" ? "★" : ""}
-                    {r.display_name}
-                  </td>
-                  <td style={tdCenter}>{fmtYMD(r.joined_at)}</td>
-                  <td style={tdCenter}>{fmtMD(r.last_attended_date)}</td>
-                  <td style={tdCenter}>{r.role === "admin" ? "40" : remain}</td>
-                  <td style={tdCenter}>{r.total_attendances ?? 0}</td>
-                  <td style={tdCenter}>{r.total_rank ?? ""}</td>
-                  <td style={tdCenter}>{r.month_count ?? 0}</td>
-                  <td style={tdCenter}>{r.prev_count ?? 0}</td>
-                  <td style={tdLeft}>{r.note ?? ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr
+                    key={r.membership_id}
+                    style={{
+                      background: bg,
+                      borderTop: "1px solid #d7dbe3",
+                      color: "black",
+                    }}
+                  >
+                    <td style={tdCenter}>{idx + 1}</td>
+                    <td style={tdCenter}>
+                      {r.role === "admin" ? "★" : ""}
+                      {r.display_name}
+                    </td>
+                    <td style={tdCenter}>{fmtYMD(r.joined_at)}</td>
+                    <td style={tdCenter}>{fmtMD(r.last_attended_date)}</td>
+                    <td style={tdCenter}>{r.role === "admin" ? "40" : remain}</td>
+                    <td style={tdCenter}>{r.total_attendances ?? 0}</td>
+                    <td style={tdCenter}>{r.total_rank ?? ""}</td>
+                    <td style={tdCenter}>{r.month_count ?? 0}</td>
+                    <td style={tdCenter}>{r.prev_count ?? 0}</td>
+                    <td style={tdLeft}>{r.note ?? ""}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
     </DashboardClient>
   );
 }
@@ -133,7 +133,7 @@ const th: React.CSSProperties = {
   padding: "10px 8px",
   fontSize: 13,
   fontWeight: 700,
-  borderRight: "1px solid rgba(255,255,255,0.25)",
+  borderRight: "1px solid black",
   textAlign: "center",
   whiteSpace: "nowrap",
 };
