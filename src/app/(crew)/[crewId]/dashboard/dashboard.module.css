@@ -1,5 +1,6 @@
 .tableWrap {
   overflow-x: auto;
+  max-width: 100%;
   border: 1px solid #d7dbe3;
   border-radius: 12px;
   width: 900px;
@@ -10,7 +11,6 @@
 .crewTable {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
 }
 
 .th,
@@ -22,23 +22,21 @@
 
 /* 모바일 */
 @media (max-width: 640px) {
-  .crewTable {
-    min-width: 450px;
+  .tableWrap {
+    width: "400px"
   }
   .th,
   .td {
-    padding: 6px 4px;
-    font-size: 12px;
+    font-size: 8px;
   }
 }
 
 @media (max-width: 390px) {
-  .crewTable {
-    min-width: 450px;
+  .tableWrap {
+    width: "400px"
   }
   .th,
   .td {
-    padding: 5px 3px;
-    font-size: 11px;
+    font-size: 6px;
   }
 }

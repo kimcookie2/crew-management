@@ -63,7 +63,7 @@ export default async function Dashboard({
   const prevTotal = rows.reduce((s: number, r: any) => s + (r.prev_count ?? 0), 0);
 
   return (
-    <div style={{ padding: 16 }}>
+    <div style={{ padding: 0 }}>
       <div className={styles.tableWrap}>
         <table className={styles.crewTable}>
           <thead>
