@@ -23,7 +23,7 @@
 /* 모바일 */
 @media (max-width: 640px) {
   .crewTable {
-    min-width: 720px;
+    min-width: 450px;
   }
   .th,
   .td {
@@ -34,7 +34,7 @@
 
 @media (max-width: 390px) {
   .crewTable {
-    min-width: 680px;
+    min-width: 450px;
   }
   .th,
   .td {

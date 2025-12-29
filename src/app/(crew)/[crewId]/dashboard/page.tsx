@@ -68,15 +68,15 @@ export default async function Dashboard({
         <table className={styles.crewTable}>
           <thead>
             <tr style={{ background: "#0b4aa2", color: "white" }}>
-              <th rowSpan={2} style={{...th, width: "10px"}}>구분</th>
-              <th rowSpan={2} style={{...th, width: "100px"}}>닉네임</th>
-              <th rowSpan={2} style={{...th, width: "120px"}}>입장 일자</th>
-              <th rowSpan={2} style={{...th, width: "100px"}}>최근 참여 일자</th>
-              <th rowSpan={2} style={{...th, width: "80px"}}>남은 활동<br/>유지 기간</th>
-              <th rowSpan={2} style={{...th, width: "60px"}}>총 참여<br/>횟수</th>
-              <th rowSpan={2} style={{...th, width: "20px"}}>참여<br/>순위</th>
-              <th style={{...th, width: "50px"}}>{monthLabel}</th>
-              <th style={{...th, width: "50px"}}>{prevLabel}</th>
+              <th rowSpan={2} style={{...th, width: "1%"}}>구분</th>
+              <th rowSpan={2} style={{...th, width: "10%"}}>닉네임</th>
+              <th rowSpan={2} style={{...th, width: "12%"}}>입장 일자</th>
+              <th rowSpan={2} style={{...th, width: "10%"}}>최근 참여 일자</th>
+              <th rowSpan={2} style={{...th, width: "8%"}}>남은 활동<br/>유지 기간</th>
+              <th rowSpan={2} style={{...th, width: "6%"}}>총 참여<br/>횟수</th>
+              <th rowSpan={2} style={{...th, width: "6%"}}>참여<br/>순위</th>
+              <th style={{...th, width: "8%"}}>{monthLabel}</th>
+              <th style={{...th, width: "8%"}}>{prevLabel}</th>
               <th rowSpan={2} style={th}>비고</th>
             </tr>
             <tr style={{ background: "#0b4aa2", color: "white" }}>
