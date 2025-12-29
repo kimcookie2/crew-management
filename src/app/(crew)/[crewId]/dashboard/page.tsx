@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabaseServer } from "@/lib/supabase/server";
+import styles from "./dashboard.module.css";
+
 
 function fmtYMD(d?: string | null) {
   if (!d) return "";
@@ -62,10 +64,8 @@ export default async function Dashboard({
 
   return (
     <div style={{ padding: 16 }}>
-      <h2 style={{ marginBottom: 12 }}>현황</h2>
-
-      <div style={{ overflowX: "auto", border: "1px solid #d7dbe3", borderRadius: 12 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
+      <div className={styles.tableWrap}>
+        <table className={styles.crewTable}>
           <thead>
             <tr style={{ background: "#0b4aa2", color: "white" }}>
               <th rowSpan={2} style={th}>구분</th>
@@ -121,6 +121,7 @@ export default async function Dashboard({
         </table>
       </div>
     </div>
+    
   );
 }
 

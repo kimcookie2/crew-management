@@ -1,4 +1,4 @@
-import Link from "next/link";
+import CrewCalendar from "@/components/CrewCalendar";
 
 export default async function EventsPage({
   params,
@@ -8,6 +8,8 @@ export default async function EventsPage({
   const { crewId } = await params;
 
   return (
-    <></>
+    <div style={{ padding: 16 }}>
+      <CrewCalendar crewId={crewId} />
+    </div>
   );
 }

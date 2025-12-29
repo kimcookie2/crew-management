@@ -89,9 +89,9 @@ export default function NewEventPage() {
 
   async function onSubmit() {
     if (!crewId) return;
-    if (!date) return setMsg("날짜를 선택해줘.");
-    if (!gymName.trim()) return setMsg("장소를 입력해줘.");
-    if (selectedIds.length === 0) return setMsg("참석자를 최소 1명 이상 선택해줘.");
+    if (!date) return setMsg("날짜를 선택해주세요.");
+    if (!gymName.trim()) return setMsg("장소를 입력해주세요.");
+    if (selectedIds.length === 0) return setMsg("참석자를 최소 1명 이상 선택해주세요.");
 
     setLoading(true);
     setMsg(null);
@@ -115,9 +115,7 @@ export default function NewEventPage() {
   }
 
   return (
-    <div style={{ padding: 16, maxWidth: 900, margin: "0 auto" }}>
-      <h2 style={{ marginBottom: 12 }}>참석 입력</h2>
-
+    <div style={{ padding: 16, maxWidth: 900, margin: "0 auto", color: "black" }}>
       <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
         장소
         <input
@@ -139,25 +137,6 @@ export default function NewEventPage() {
             color="white"
           />
         </label>
-
-        <button
-          type="button"
-          onClick={() => toggleAll(true)}
-          style={btn}
-        >
-          전체 선택
-        </button>
-        <button
-          type="button"
-          onClick={() => toggleAll(false)}
-          style={btn}
-        >
-          전체 해제
-        </button>
-
-        <div style={{ fontSize: 13, opacity: 0.8 }}>
-          선택: {selectedIds.length}명
-        </div>
       </div>
 
       <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -169,6 +148,9 @@ export default function NewEventPage() {
           style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 }}
         />
       </label>
+      <div style={{ fontSize: 13, opacity: 0.8 }}>
+        선택: {selectedIds.length}명
+      </div>
 
       {msg && <div style={{ marginTop: 12, color: "crimson" }}>{msg}</div>}
 
@@ -204,10 +186,6 @@ export default function NewEventPage() {
                   <strong style={{ color: "black" }}>{label}</strong>
                   {isHold && <span style={{ fontSize: 12, opacity: 0.8 }}>정지</span>}
                 </div>
-
-                <span style={{ fontSize: 12, opacity: 0.8 }}>
-                  {m.joined_at ? `입장: ${m.joined_at}` : ""}
-                </span>
               </label>
             );
           })}
