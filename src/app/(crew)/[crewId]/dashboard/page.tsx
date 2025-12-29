@@ -9,7 +9,7 @@ function fmtYMD(d?: string | null) {
   const y = dt.getFullYear();
   const m = String(dt.getMonth() + 1).padStart(2, "0");
   const day = String(dt.getDate()).padStart(2, "0");
-  return `${y}년 ${m}월 ${day}일`;
+  return `${y.toString().substr(2)}년 ${m}월 ${day}일`;
 }
 
 function fmtMD(d?: string | null) {
@@ -68,15 +68,15 @@ export default async function Dashboard({
         <table className={styles.crewTable}>
           <thead>
             <tr style={{ background: "#0b4aa2", color: "white" }}>
-              <th rowSpan={2} style={th}>구분</th>
-              <th rowSpan={2} style={th}>닉네임</th>
-              <th rowSpan={2} style={th}>입장 일자</th>
-              <th rowSpan={2} style={th}>최근 참여 일자</th>
-              <th rowSpan={2} style={th}>남은 활동 유지 기간</th>
-              <th rowSpan={2} style={th}>총 참여횟수</th>
-              <th rowSpan={2} style={th}>참여 순위</th>
-              <th style={th}>{monthLabel}</th>
-              <th style={th}>{prevLabel}</th>
+              <th rowSpan={2} style={{...th, width: "10px"}}>구분</th>
+              <th rowSpan={2} style={{...th, width: "100px"}}>닉네임</th>
+              <th rowSpan={2} style={{...th, width: "120px"}}>입장 일자</th>
+              <th rowSpan={2} style={{...th, width: "100px"}}>최근 참여 일자</th>
+              <th rowSpan={2} style={{...th, width: "80px"}}>남은 활동<br/>유지 기간</th>
+              <th rowSpan={2} style={{...th, width: "60px"}}>총 참여<br/>횟수</th>
+              <th rowSpan={2} style={{...th, width: "20px"}}>참여<br/>순위</th>
+              <th style={{...th, width: "50px"}}>{monthLabel}</th>
+              <th style={{...th, width: "50px"}}>{prevLabel}</th>
               <th rowSpan={2} style={th}>비고</th>
             </tr>
             <tr style={{ background: "#0b4aa2", color: "white" }}>
@@ -108,7 +108,7 @@ export default async function Dashboard({
                   </td>
                   <td style={tdCenter}>{fmtYMD(r.joined_at)}</td>
                   <td style={tdCenter}>{fmtMD(r.last_attended_date)}</td>
-                  <td style={tdCenter}>{remain}</td>
+                  <td style={tdCenter}>{r.role === "admin" ? "40" : remain}</td>
                   <td style={tdCenter}>{r.total_attendances ?? 0}</td>
                   <td style={tdCenter}>{r.total_rank ?? ""}</td>
                   <td style={tdCenter}>{r.month_count ?? 0}</td>
