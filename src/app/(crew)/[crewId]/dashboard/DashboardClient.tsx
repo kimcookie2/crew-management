@@ -61,9 +61,12 @@ export default function DashboardClient({
       tableEl.style.width = `${fullW}px`;
       tableEl.style.minWidth = `${fullW}px`;
 
+      const MAX = 16000;
+      const pr = Math.min(2, MAX / fullW, MAX / fullH);
+
       const dataUrl = await htmlToImage.toPng(tableEl, {
         cacheBust: true,
-        pixelRatio: 2,
+        pixelRatio: pr,
         backgroundColor: "white",
         width: fullW,     // ✅ 이게 잘림 방지에 가장 중요
         height: fullH,    // (세로도 전체로)
