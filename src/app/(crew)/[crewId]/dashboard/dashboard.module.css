@@ -1,6 +1,5 @@
 .tableWrap {
   overflow-x: auto;
-  max-width: 100%;
   border: 1px solid #d7dbe3;
   border-radius: 12px;
   width: 900px;
@@ -9,7 +8,7 @@
 }
 
 .crewTable {
-  width: 100%;
+  width: 900px;
   border-collapse: collapse;
 }
 
@@ -22,9 +21,6 @@
 
 /* 모바일 */
 @media (max-width: 640px) {
-  .tableWrap {
-    width: "400px"
-  }
   .th,
   .td {
     font-size: 8px;
@@ -32,9 +28,6 @@
 }
 
 @media (max-width: 390px) {
-  .tableWrap {
-    width: "400px"
-  }
   .th,
   .td {
     font-size: 6px;

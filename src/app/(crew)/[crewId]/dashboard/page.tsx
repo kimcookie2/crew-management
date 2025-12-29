@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./dashboard.module.css";
+import DashboardClient from "./DashboardClient";
 
 
 function fmtYMD(d?: string | null) {
@@ -62,7 +63,10 @@ export default async function Dashboard({
   const monthTotal = rows.reduce((s: number, r: any) => s + (r.month_count ?? 0), 0);
   const prevTotal = rows.reduce((s: number, r: any) => s + (r.prev_count ?? 0), 0);
 
+  const title = `dashboard-${crewId}-${new Date().toISOString().slice(0, 10)}`;
+
   return (
+    <DashboardClient title={title}>
     <div style={{ padding: 0 }}>
       <div className={styles.tableWrap}>
         <table className={styles.crewTable}>
@@ -121,7 +125,7 @@ export default async function Dashboard({
         </table>
       </div>
     </div>
-    
+    </DashboardClient>
   );
 }
 

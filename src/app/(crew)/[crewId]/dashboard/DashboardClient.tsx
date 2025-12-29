@@ -1,0 +1,140 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useRef, useState } from "react";
+import * as htmlToImage from "html-to-image";
+
+export default function DashboardClient({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function onExport() {
+    if (!scrollBoxRef.current || !tableRef.current) return;
+
+    setBusy(true);
+
+    const scrollBox = scrollBoxRef.current;
+    const tableEl = tableRef.current;
+
+    const prevBox = {
+      overflow: scrollBox.style.overflow,
+      overflowX: scrollBox.style.overflowX,
+      overflowY: scrollBox.style.overflowY,
+      maxHeight: scrollBox.style.maxHeight,
+      height: scrollBox.style.height,
+      width: scrollBox.style.width,
+    };
+
+    const prevTable = {
+      width: tableEl.style.width,
+      minWidth: tableEl.style.minWidth,
+      maxWidth: tableEl.style.maxWidth,
+    };
+
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+
+      // ✅ 스크롤 박스 제한 풀기
+      scrollBox.style.overflow = "visible";
+      scrollBox.style.overflowX = "visible";
+      scrollBox.style.overflowY = "visible";
+      scrollBox.style.maxHeight = "none";
+      scrollBox.style.height = "auto";
+
+      // ✅ "전체 폭/높이" 측정
+      const fullW = scrollBox.scrollWidth;   // 전체 가로
+      const fullH = scrollBox.scrollHeight;  // 전체 세로
+
+      // ✅ 캡처 대상 DOM을 강제로 전체 폭으로
+      tableEl.style.maxWidth = "none";
+      tableEl.style.width = `${fullW}px`;
+      tableEl.style.minWidth = `${fullW}px`;
+
+      // 레이아웃 반영
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const dataUrl = await htmlToImage.toPng(tableEl, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "white",
+        width: fullW,     // ✅ 이게 잘림 방지에 가장 중요
+        height: fullH,    // (세로도 전체로)
+        style: {
+          transform: "scale(1)",
+          transformOrigin: "top left",
+        },
+      });
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title}.png`;
+      a.click();
+    } catch (e: any) {
+      alert(e?.message ?? "내보내기에 실패했습니다.");
+    } finally {
+      // 원복
+      scrollBox.style.overflow = prevBox.overflow;
+      scrollBox.style.overflowX = prevBox.overflowX;
+      scrollBox.style.overflowY = prevBox.overflowY;
+      scrollBox.style.maxHeight = prevBox.maxHeight;
+      scrollBox.style.height = prevBox.height;
+      scrollBox.style.width = prevBox.width;
+
+      tableEl.style.width = prevTable.width;
+      tableEl.style.minWidth = prevTable.minWidth;
+      tableEl.style.maxWidth = prevTable.maxWidth;
+
+      setBusy(false);
+    }
+  }
+
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div style={{ fontWeight: 900, color: "black" }}></div>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={onExport}
+          disabled={busy}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid #cbd5e1",
+            background: "white",
+            cursor: "pointer",
+            fontWeight: 900,
+            color: "black",
+          }}
+        >
+          {busy ? "내보내는 중..." : "내보내기"}
+        </button>
+      </div>
+
+      {/* ✅ 스크롤 래퍼 */}
+      <div
+        ref={scrollBoxRef}
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          overflowX: "auto",
+          overflowY: "auto",
+          background: "white",
+        }}
+      >
+        {/* ✅ 실제 캡처 대상(표 전체) */}
+        <div ref={tableRef} style={{ background: "white", color: "black" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
