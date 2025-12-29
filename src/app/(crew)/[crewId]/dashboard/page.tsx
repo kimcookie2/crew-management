@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabaseServer } from "@/lib/supabase/server";
 
 function fmtYMD(d?: string | null) {
@@ -55,9 +56,9 @@ export default async function Dashboard({
   const monthLabel = `${monthStart.getMonth() + 1}월`;
   const prev = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
   const prevLabel = `전월`;
-
-  const monthTotal = rows.reduce((s, r) => s + (r.month_count ?? 0), 0);
-  const prevTotal = rows.reduce((s, r) => s + (r.prev_count ?? 0), 0);
+  
+  const monthTotal = rows.reduce((s: number, r: any) => s + (r.month_count ?? 0), 0);
+  const prevTotal = rows.reduce((s: number, r: any) => s + (r.prev_count ?? 0), 0);
 
   return (
     <div style={{ padding: 16 }}>
@@ -85,7 +86,7 @@ export default async function Dashboard({
           </thead>
 
           <tbody>
-            {rows.map((r, idx) => {
+            {rows.map((r:any, idx:number) => {
               const isHold = r.status && r.status !== "active";
               const remain = isHold ? "정지" : (r.remain_days ?? "").toString();
 
