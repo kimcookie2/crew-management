@@ -67,7 +67,7 @@ export default async function Dashboard({
 
   return (
     <DashboardClient title={title}>
-      <div style={{ padding: 0 }}>
+      <div style={{ marginBottom: "10px" }}>
         <div className={styles.tableWrap}>
           <table className={styles.crewTable}>
             <thead>
