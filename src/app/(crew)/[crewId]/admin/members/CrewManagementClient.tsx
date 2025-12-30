@@ -141,7 +141,6 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         {filtered.map((r) => {
-          console.log(r)
           const isHold = r.status === "hold";
           return (
             <div
