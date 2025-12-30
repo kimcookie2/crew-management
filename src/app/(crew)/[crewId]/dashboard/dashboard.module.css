@@ -16,7 +16,7 @@
 
 .crewTable th,
 .crewTable td {
-  border: 0.5px solid #000;    /* 모든 셀 선 */
+  border: 1px solid #000;    /* 모든 셀 선 */
 }
 
 .th,
