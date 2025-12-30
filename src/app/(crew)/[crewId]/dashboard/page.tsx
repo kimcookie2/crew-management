@@ -98,7 +98,7 @@ export default async function Dashboard({
             <tbody>
               {rows.map((r:any, idx:number) => {
                 const isHold = r.status && r.status !== "active";
-                const remain = isHold ? "정지" : (r.remain_days ?? "").toString();
+                const remain = isHold ? "정지" : (r.remain_days ?? "0").toString();
 
                 const bg = isHold ? "#E7E6E6" : idx % 2 === 0 ? "#DDEBF7" : "white";
 
