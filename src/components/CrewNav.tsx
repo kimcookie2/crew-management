@@ -14,7 +14,6 @@ export default function CrewNav({ crewId }: { crewId: string }) {
   useEffect(() => {
     (async () => {
       const { data, error } = await sb.rpc("get_my_crew_role", { p_crew_id: crewId });
-      console.log("get_my_crew_role", { crewId, data, error });
       if (!error) setIsAdmin(data === "admin");
     })();
   }, [crewId]);
