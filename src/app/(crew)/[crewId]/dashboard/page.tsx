@@ -21,7 +21,7 @@ function fmtMD(d?: string | null) {
   return `${m}월 ${day}일`;
 }
 
-function remainDotColor(remain: number | null, status?: string) {
+function remainDotColor(remain: number | 0) {
   if (remain <= 10) return "#EF4444"; // 빨강
   if (remain <= 20) return "#F59E0B"; // 노랑
   return "#22C55E"; // 초록
