@@ -52,27 +52,37 @@ export default function DashboardClient({
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => requestAnimationFrame(() => r(null)));
 
-      // ✅ "전체 폭/높이" 측정
-      const fullW = scrollBox.scrollWidth + 10;   // 전체 가로
-      const fullH = scrollBox.scrollHeight + 10;  // 전체 세로
+      // ✅ tableEl 기준으로 정확히 측정(소수점 올림)
+      const rect = tableEl.getBoundingClientRect();
+      const fullW = Math.ceil(rect.width);
+      const fullH = Math.ceil(rect.height);
+
+      // ✅ 모바일(특히 iOS)은 캔버스 제한이 빡세서 pixelRatio 낮추기
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // 안전 상한(모바일은 더 낮게)
+      const MAX = isMobile ? 8000 : 16000;
 
       // ✅ 캡처 대상 DOM을 강제로 전체 폭으로
       tableEl.style.maxWidth = "none";
       tableEl.style.width = `${fullW}px`;
       tableEl.style.minWidth = `${fullW}px`;
 
-      const MAX = 16000;
       const pr = Math.min(2, MAX / fullW, MAX / fullH);
+
+      const PAD_BOTTOM = 16;
 
       const dataUrl = await htmlToImage.toPng(tableEl, {
         cacheBust: true,
         pixelRatio: pr,
         backgroundColor: "white",
-        width: fullW,     // ✅ 이게 잘림 방지에 가장 중요
-        height: fullH,    // (세로도 전체로)
+        width: fullW,
+        height: fullH + PAD_BOTTOM, // ✅ 핵심: 조금 여유
         style: {
           transform: "scale(1)",
           transformOrigin: "top left",
+          // ✅ 혹시 모르니 캡처 중에 바닥 여백도 강제로
+          paddingBottom: `${PAD_BOTTOM}px`,
         },
       });
 
