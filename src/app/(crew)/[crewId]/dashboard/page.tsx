@@ -21,6 +21,12 @@ function fmtMD(d?: string | null) {
   return `${m}월 ${day}일`;
 }
 
+function remainDotColor(remain: number | null, status?: string) {
+  if (remain <= 10) return "#EF4444"; // 빨강
+  if (remain <= 20) return "#F59E0B"; // 노랑
+  return "#22C55E"; // 초록
+}
+
 export default async function Dashboard({
   params,
 }: {
@@ -76,7 +82,7 @@ export default async function Dashboard({
                 <th rowSpan={2} style={{...th, width: "10%"}}>닉네임</th>
                 <th rowSpan={2} style={{...th, width: "12%"}}>입장 일자</th>
                 <th rowSpan={2} style={{...th, width: "10%"}}>최근 참여 일자</th>
-                <th rowSpan={2} style={{...th, width: "8%"}}>남은 활동<br/>유지 기간</th>
+                <th rowSpan={2} style={{...th, width: "10%"}}>남은 활동<br/>유지 기간</th>
                 <th rowSpan={2} style={{...th, width: "6%"}}>총 참여<br/>횟수</th>
                 <th rowSpan={2} style={{...th, width: "6%"}}>참여<br/>순위</th>
                 <th style={{...th, width: "8%"}}>{monthLabel}</th>
@@ -112,7 +118,36 @@ export default async function Dashboard({
                     </td>
                     <td style={tdCenter}>{fmtYMD(r.joined_at)}</td>
                     <td style={tdCenter}>{fmtMD(r.last_attended_date)}</td>
-                    <td style={tdCenter}>{r.role === "admin" ? "40" : remain}</td>
+                    <td style={{...tdCenter, paddingLeft: "0", paddingRight: "0"}}>
+                      <div style={{
+                        position: "relative",
+                        paddingLeft: 16, 
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center", 
+                      }}>
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 5,
+                            top: "8px",
+                            transform: "translateY(-50%)",
+                            width: 16,
+                            height: 16,
+                            borderRadius: 999,
+                            background: remainDotColor(remain ?? null, r.status),
+                            display: r.status === "hold" ? "none" : "block", 
+                          }}
+                          aria-label="remain-indicator"
+                        />
+                      </div>
+                      <span
+                        >
+                          {r.role === "admin" ? "40" : remain}
+                        </span>
+                      {/* {r.role === "admin" ? "40" : remain} */}
+                    </td>
                     <td style={tdCenter}>{r.total_attendances ?? 0}</td>
                     <td style={tdCenter}>{r.total_rank ?? ""}</td>
                     <td style={tdCenter}>{r.month_count ?? 0}</td>
