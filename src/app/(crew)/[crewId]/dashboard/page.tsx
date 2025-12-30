@@ -77,7 +77,7 @@ export default async function Dashboard({
         <div className={styles.tableWrap}>
           <table className={styles.crewTable}>
             <thead>
-              <tr style={{ background: "#0b4aa2", color: "white" }}>
+              <tr style={{ background: "#002060", color: "white" }}>
                 <th rowSpan={2} style={{...th, width: "1%"}}>구분</th>
                 <th rowSpan={2} style={{...th, width: "10%"}}>닉네임</th>
                 <th rowSpan={2} style={{...th, width: "12%"}}>입장 일자</th>
@@ -89,7 +89,7 @@ export default async function Dashboard({
                 <th style={{...th, width: "8%"}}>{prevLabel}</th>
                 <th rowSpan={2} style={th}>비고</th>
               </tr>
-              <tr style={{ background: "#0b4aa2", color: "white" }}>
+              <tr style={{ background: "#002060", color: "white" }}>
                 <th style={thSub}>{monthEvents}회</th>
                 <th style={thSub}>{prevEvents}회</th>
               </tr>
@@ -100,7 +100,7 @@ export default async function Dashboard({
                 const isHold = r.status && r.status !== "active";
                 const remain = isHold ? "정지" : (r.remain_days ?? "").toString();
 
-                const bg = isHold ? "#e5e7eb" : idx % 2 === 0 ? "#eaf2ff" : "white";
+                const bg = isHold ? "#E7E6E6" : idx % 2 === 0 ? "#DDEBF7" : "white";
 
                 return (
                   <tr
@@ -113,7 +113,7 @@ export default async function Dashboard({
                   >
                     <td style={tdCenter}>{idx + 1}</td>
                     <td style={tdCenter}>
-                      {r.role === "admin" ? "★" : ""}
+                      <span style={{color: "#FF00FF"}}>{r.role === "admin" ? "★" : ""}</span>
                       {r.display_name}
                     </td>
                     <td style={tdCenter}>{fmtYMD(r.joined_at)}</td>
