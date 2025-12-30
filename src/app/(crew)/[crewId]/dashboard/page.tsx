@@ -136,7 +136,7 @@ export default async function Dashboard({
                             width: 16,
                             height: 16,
                             borderRadius: 999,
-                            background: remainDotColor(remain ?? null, r.status),
+                            background: remainDotColor(remain ?? null),
                             display: r.status === "hold" ? "none" : "block", 
                           }}
                           aria-label="remain-indicator"
