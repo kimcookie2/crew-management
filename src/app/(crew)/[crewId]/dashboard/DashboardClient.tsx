@@ -41,7 +41,7 @@ export default function DashboardClient({
     try {
       if (document.fonts?.ready) await document.fonts.ready;
 
-      // ✅ 스크롤 박스 제한 풀기
+      // 스크롤 박스 제한 풀기
       scrollBox.style.overflow = "visible";
       scrollBox.style.overflowX = "visible";
       scrollBox.style.overflowY = "visible";
@@ -52,37 +52,27 @@ export default function DashboardClient({
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => requestAnimationFrame(() => r(null)));
 
-      // ✅ tableEl 기준으로 정확히 측정(소수점 올림)
-      const rect = tableEl.getBoundingClientRect();
-      const fullW = Math.ceil(rect.width);
-      const fullH = Math.ceil(rect.height);
+      // "전체 폭/높이" 측정
+      const fullW = scrollBox.scrollWidth + 10;   // 전체 가로
+      const fullH = scrollBox.scrollHeight + 10;  // 전체 세로
 
-      // ✅ 모바일(특히 iOS)은 캔버스 제한이 빡세서 pixelRatio 낮추기
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      // 안전 상한(모바일은 더 낮게)
-      const MAX = isMobile ? 8000 : 16000;
-
-      // ✅ 캡처 대상 DOM을 강제로 전체 폭으로
+      // 캡처 대상 DOM을 강제로 전체 폭으로
       tableEl.style.maxWidth = "none";
       tableEl.style.width = `${fullW}px`;
       tableEl.style.minWidth = `${fullW}px`;
 
+      const MAX = 16000;
       const pr = Math.min(2, MAX / fullW, MAX / fullH);
-
-      const PAD_BOTTOM = 16;
 
       const dataUrl = await htmlToImage.toPng(tableEl, {
         cacheBust: true,
         pixelRatio: pr,
         backgroundColor: "white",
-        width: fullW,
-        height: fullH + PAD_BOTTOM, // ✅ 핵심: 조금 여유
+        width: fullW, 
+        height: fullH,
         style: {
           transform: "scale(1)",
           transformOrigin: "top left",
-          // ✅ 혹시 모르니 캡처 중에 바닥 여백도 강제로
-          paddingBottom: `${PAD_BOTTOM}px`,
         },
       });
 
