@@ -117,7 +117,7 @@ export default async function Dashboard({
                     <td style={tdCenter}>{r.total_rank ?? ""}</td>
                     <td style={tdCenter}>{r.month_count ?? 0}</td>
                     <td style={tdCenter}>{r.prev_count ?? 0}</td>
-                    <td style={tdLeft}>{r.note ?? ""}</td>
+                    <td style={tdCenter}>{r.note ?? ""}</td>
                   </tr>
                 );
               })}

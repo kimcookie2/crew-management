@@ -127,20 +127,21 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
   return (
     <div style={{ padding: 0, color: "black" }}>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+      <div style={{ display: "flex", gap: 10, marginTop: 12, height: "3rem", fontSize: "0.8rem" }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="닉네임 검색"
           style={{ flex: 1, padding: 10, borderRadius: 12, border: "1px solid #cbd5e1" }}
         />
-        <button onClick={openAdd} disabled={busy} style={btn}>
+        <button onClick={openAdd} disabled={busy} style={{...btn}}>
           크루원 추가
         </button>
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         {filtered.map((r) => {
+          console.log(r)
           const isHold = r.status === "hold";
           return (
             <div
@@ -161,7 +162,7 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
               </div>
 
               <div style={{ marginTop: 6, fontSize: 13, opacity: 0.85 }}>
-                입장: {r.joined_at ?? "-"} · 권한: {r.role ?? "member"}
+                입장: {r.joined_at ?? "-"}
               </div>
 
               {r.note && (
