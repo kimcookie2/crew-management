@@ -144,7 +144,7 @@ export default function DashboardClient({
             }}
           >
             <div style={{ marginBottom: "10px" }}>
-              <div style={{ fontSize: 18, fontWeight: 900 }}>2025 참여 현황</div>
+              <div style={{ fontSize: 18, fontWeight: 900 }}>참여 현황</div>
               <div style={{ fontSize: 12, opacity: 0.75 }}>
                 기준일 : {new Date().toISOString().slice(0, 10)}
               </div>
