@@ -22,6 +22,7 @@ export default function CrewNav({ crewId }: { crewId: string }) {
     const base = [
       { href: `/${crewId}/events`, label: "모임 달력" },
       { href: `/${crewId}/dashboard`, label: "활동현황" },
+      { href: `/${crewId}/stats`, label: "활동통계" },
     ];
 
     if (isAdmin) {

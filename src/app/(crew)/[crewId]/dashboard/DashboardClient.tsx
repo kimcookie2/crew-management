@@ -1,19 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as htmlToImage from "html-to-image";
 
 export default function DashboardClient({
   title,
+  initialBaseDate,
   children,
 }: {
   title: string;
+  initialBaseDate: string;
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const sp = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
   const scrollBoxRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
+
+  const [baseDate, setBaseDate] = useState(initialBaseDate);
+
+  // ✅ 서버에서 내려준 초기값이 바뀌면 동기화(뒤로가기 등)
+  useEffect(() => {
+    setBaseDate(initialBaseDate);
+  }, [initialBaseDate]);
+
+  function setBaseToUrl(nextBase: string) {
+    const params = new URLSearchParams(sp?.toString() ?? "");
+    params.set("base", nextBase);
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`);
+    });
+  }
 
   async function onExport() {
     if (!scrollBoxRef.current || !tableRef.current) return;
@@ -41,22 +64,18 @@ export default function DashboardClient({
     try {
       if (document.fonts?.ready) await document.fonts.ready;
 
-      // 스크롤 박스 제한 풀기
       scrollBox.style.overflow = "visible";
       scrollBox.style.overflowX = "visible";
       scrollBox.style.overflowY = "visible";
       scrollBox.style.maxHeight = "none";
       scrollBox.style.height = "auto";
 
-      // 레이아웃 반영
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => requestAnimationFrame(() => r(null)));
 
-      // "전체 폭/높이" 측정
-      const fullW = scrollBox.scrollWidth + 10;   // 전체 가로
-      const fullH = scrollBox.scrollHeight + 10;  // 전체 세로
+      const fullW = scrollBox.scrollWidth + 10;
+      const fullH = scrollBox.scrollHeight + 10;
 
-      // 캡처 대상 DOM을 강제로 전체 폭으로
       tableEl.style.maxWidth = "none";
       tableEl.style.width = `${fullW}px`;
       tableEl.style.minWidth = `${fullW}px`;
@@ -68,12 +87,9 @@ export default function DashboardClient({
         cacheBust: true,
         pixelRatio: pr,
         backgroundColor: "white",
-        width: fullW, 
+        width: fullW,
         height: fullH,
-        style: {
-          transform: "scale(1)",
-          transformOrigin: "top left",
-        },
+        style: { transform: "scale(1)", transformOrigin: "top left" },
       });
 
       const a = document.createElement("a");
@@ -83,7 +99,6 @@ export default function DashboardClient({
     } catch (e: any) {
       alert(e?.message ?? "내보내기에 실패했습니다.");
     } finally {
-      // 원복
       scrollBox.style.overflow = prevBox.overflow;
       scrollBox.style.overflowX = prevBox.overflowX;
       scrollBox.style.overflowY = prevBox.overflowY;
@@ -99,12 +114,32 @@ export default function DashboardClient({
     }
   }
 
-
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ fontWeight: 900, color: "black" }}></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "5px" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", height: "100%"}}>
+          <label style={{ fontWeight: 800 }}>기준일</label>
+          <input
+            type="date"
+            value={baseDate}
+            onChange={(e) => {
+              const v = e.target.value;
+              setBaseDate(v);
+              setBaseToUrl(v); // ✅ 바꾸자마자 서버 재조회
+            }}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 10,
+              border: "1px solid #cbd5e1",
+              background: "white",
+              color: "black",
+            }}
+          />
+          {isPending && <span style={{ fontSize: 12, opacity: 0.7 }}>갱신중...</span>}
+        </div>
+
         <div style={{ flex: 1 }} />
+
         <button
           onClick={onExport}
           disabled={busy}
@@ -122,7 +157,6 @@ export default function DashboardClient({
         </button>
       </div>
 
-      {/* ✅ 스크롤 래퍼 */}
       <div
         ref={scrollBoxRef}
         style={{
@@ -131,29 +165,14 @@ export default function DashboardClient({
           overflowX: "auto",
           overflowY: "auto",
           background: "white",
+          opacity: isPending ? 0.6 : 1,          // ✅ 갱신 중 살짝 dim
+          pointerEvents: isPending ? "none" : "auto",
+          transition: "opacity 120ms ease",
         }}
       >
-        {/* ✅ 실제 캡처 대상(표 전체) */}
-        <div ref={tableRef} style={{ background: "white", color: "black", padding: "10px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: 12,
-            }}
-          >
-            <div style={{ marginBottom: "10px" }}>
-              <div style={{ fontSize: 18, fontWeight: 900 }}>참여 현황</div>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>
-                기준일 : {new Date().toISOString().slice(0, 10)}
-              </div>
-            </div>
-          </div>
+        <div ref={tableRef} style={{ background: "white", color: "black", padding: "0px" }}>
           {children}
-          <div style={{ fontSize: 12, opacity: 0.75, color: "red", 
-            marginTop: busy ? "30px" : "10px" 
-            }}>
+          <div style={{ fontSize: 12, opacity: 1, color: "red", marginTop: busy ? "30px" : "10px" }}>
             ※ 참여 횟수는 단톡방 내 게시된 클라이밍 일정에 2명 이상 참여하였을 때 적용됩니다. (개인 일정 혹은 클라이밍 외 일정 적용X)
           </div>
         </div>
