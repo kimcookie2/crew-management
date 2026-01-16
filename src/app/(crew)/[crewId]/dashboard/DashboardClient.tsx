@@ -172,7 +172,7 @@ export default function DashboardClient({
       >
         <div ref={tableRef} style={{ background: "white", color: "black", padding: "0px" }}>
           {children}
-          <div style={{ fontSize: 12, opacity: 1, color: "red", marginTop: busy ? "30px" : "10px" }}>
+          <div style={{ width: "900px", fontSize: 12, opacity: 1, color: "red", marginTop: busy ? "30px" : "10px", marginLeft: "auto", marginRight: "auto" }}>
             ※ 참여 횟수는 단톡방 내 게시된 클라이밍 일정에 2명 이상 참여하였을 때 적용됩니다. (개인 일정 혹은 클라이밍 외 일정 적용X)
           </div>
         </div>

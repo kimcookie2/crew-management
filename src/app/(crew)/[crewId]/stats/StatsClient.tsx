@@ -1,215 +1,319 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-type Row = {
+type TotalRow = {
   membership_id: string;
   display_name: string;
-  joined_at: string | null;
-  last_attended_date: string | null;
-  status: string;
   role: string | null;
-  note: string | null;
+  status: string | null;
   total_attendances: number;
   total_rank: number;
-  keep_days: number;
-  remain_days: number | null;
+};
+
+type MonthRow = {
+  membership_id: string;
+  display_name: string;
+  role: string | null;
+  status: string | null;
   month_count: number;
+  month_rank: number;
   prev_count: number;
+  prev_rank: number | null;
+  rank_delta: number | null;
 };
 
 type Tab = "total" | "month";
 
-function ymd(d: Date) {
-  return d.toISOString().slice(0, 10);
+function ymdToday() {
+  return new Date().toISOString().slice(0, 10);
 }
-
-function monthKey(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
+function monthStartFromYmd(ymd: string) {
+  return `${ymd.slice(0, 7)}-01`;
 }
-
-function denseRank(sortedValues: number[]) {
-  // values는 이미 내림차순 정렬되어 있다고 가정
-  const ranks: number[] = [];
-  let last: number | null = null;
-  let rank = 0;
-  for (let i = 0; i < sortedValues.length; i++) {
-    const v = sortedValues[i];
-    if (last === null || v !== last) rank = rank + 1;
-    ranks.push(rank);
-    last = v;
-  }
-  return ranks;
+function monthStartFromYm(ym: string) {
+  // ym: "2026-01"
+  return `${ym}-01`;
+}
+function fmtYM(monthStart: string) {
+  const d = new Date(`${monthStart}T00:00:00`);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+}
+function diffBadge(curr: number, prev: number) {
+  const d = (curr ?? 0) - (prev ?? 0);
+  if (d > 0) return `▲${d}`;
+  if (d < 0) return `▼${Math.abs(d)}`;
+  return "-";
 }
 
 export default function StatsClient({ crewId }: { crewId: string }) {
   const sb = supabaseBrowser();
 
   const [tab, setTab] = useState<Tab>("total");
-  const [month, setMonth] = useState(() => monthKey(new Date()));
-  const [rows, setRows] = useState<Row[]>([]);
-  const [err, setErr] = useState<string | null>(null);
+
+  // ✅ 기준일(컷) - 대시보드랑 통일
+  const [asof, setAsof] = useState(ymdToday());
+
+  // ✅ 월 선택(월 탭에서만)
+  const [ym, setYm] = useState(() => ymdToday().slice(0, 7)); // "YYYY-MM"
+
+  const [totalRows, setTotalRows] = useState<TotalRow[]>([]);
+  const [monthRows, setMonthRows] = useState<MonthRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  const pMonthDate = useMemo(() => `${month}-01`, [month]);
+  const monthStart = useMemo(() => monthStartFromYm(ym), [ym]);
 
+  async function loadTotal() {
+    console.log("loadTotal")
+    setLoading(true);
+    setErr(null);
+    const { data, error } = await sb.rpc("get_crew_stats_total_rank", {
+      p_crew_id: crewId,
+      p_asof: asof,
+    });
+    setLoading(false);
+    if (error) return setErr(error.message);
+    setTotalRows((data ?? []) as TotalRow[]);
+  }
+
+  async function loadMonth() {
+    console.log("loadMonth")
+    setLoading(true);
+    setErr(null);
+    const { data, error } = await sb.rpc("get_crew_stats_month_rank", {
+      p_crew_id: crewId,
+      p_month: monthStart,
+      p_asof: asof,
+    });
+    setLoading(false);
+    if (error) return setErr(error.message);
+    setMonthRows((data ?? []) as MonthRow[]);
+  }
+
+  function rankDeltaLabel(prevRank: number | null, delta: number | null) {
+    if (prevRank == null) return { text: "-", color: "#6B7280" }; // 회색
+    if (delta == null || delta === 0) return { text: "-", color: "#6B7280" };
+    if (delta > 0) return { text: `▲${delta}`, color: "#EF4444" }; // 상승=빨강
+    return { text: `▼${Math.abs(delta)}`, color: "#3B82F6" }; // 하락=파랑
+  }
+
+  // 탭/기준일/월 변경에 따라 로드
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setErr(null);
-
-      const { data, error } = await sb.rpc("get_crew_dashboard", {
-        p_crew_id: crewId,
-        p_month: pMonthDate,
-      });
-
-      setLoading(false);
-      if (error) return setErr(error.message);
-      setRows((data ?? []) as Row[]);
-    })();
-  }, [crewId, pMonthDate]);
-
-  const view = useMemo(() => {
-    if (tab === "total") {
-      const sorted = [...rows].sort((a, b) => (b.total_attendances ?? 0) - (a.total_attendances ?? 0));
-      const values = sorted.map((r) => r.total_attendances ?? 0);
-      const ranks = denseRank(values);
-      return sorted.map((r, i) => ({ ...r, _rank: ranks[i], _value: r.total_attendances ?? 0 }));
-    } else {
-      const sorted = [...rows].sort((a, b) => (b.month_count ?? 0) - (a.month_count ?? 0));
-      const values = sorted.map((r) => r.month_count ?? 0);
-      const ranks = denseRank(values);
-      return sorted.map((r, i) => ({ ...r, _rank: ranks[i], _value: r.month_count ?? 0 }));
-    }
-  }, [rows, tab]);
-
-  const title = tab === "total" ? "전체 활동참여 순위" : `${month} 월 참여 순위`;
+    if (tab === "total") loadTotal();
+    else loadMonth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, asof, monthStart, crewId]);
 
   return (
     <div style={{ color: "black" }}>
-      {/* 탭 */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <button onClick={() => setTab("total")} style={{ ...tabBtn, ...(tab === "total" ? tabOn : {}) }}>
-          전체
-        </button>
-        <button onClick={() => setTab("month")} style={{ ...tabBtn, ...(tab === "month" ? tabOn : {}) }}>
-          월별
-        </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setTab("total")}
+            style={{ ...tabBtn, ...(tab === "total" ? tabBtnOn : tabBtnOff) }}
+          >
+            전체
+          </button>
+          <button
+            onClick={() => setTab("month")}
+            style={{ ...tabBtn, ...(tab === "month" ? tabBtnOn : tabBtnOff) }}
+          >
+            월별
+          </button>
+        </div>
 
-        <div style={{ flex: 1 }} />
-
-        {/* 월 선택 (월별 탭일 때만) */}
         {tab === "month" && (
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            style={monthInput}
-          />
+          <div style={{  }}>
+            <input
+              type="month"
+              value={ym}
+              onChange={(e) => setYm(e.target.value)}
+              style={input}
+            />
+          </div>
         )}
+        <div style={{ flex: 1 }} />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ fontWeight: 900 }}>{title}</div>
-        {loading && <span style={{ fontSize: 12, opacity: 0.75 }}>불러오는 중…</span>}
-        {err && <span style={{ fontSize: 12, color: "crimson" }}>{err}</span>}
-      </div>
+      
 
-      {/* 표 */}
-      <div style={tableWrap}>
-        <table style={table}>
-          <thead>
-            <tr>
-              <th style={th}>순위</th>
-              <th style={th}>닉네임</th>
-              <th style={th}>{tab === "total" ? "총 참여횟수" : "이 달 참여횟수"}</th>
-              {/* <th style={th}>전월</th>
-              <th style={th}>상태</th> */}
-            </tr>
-          </thead>
-          <tbody>
-            {view.map((r) => (
-              <tr key={r.membership_id} style={r.status === "hold" ? trHold : undefined}>
-                <td style={td}>{r._rank}</td>
-                <td style={td}>
-                  <span style={{ fontWeight: 900 }}>
-                    {r.role === "admin" ? "★" : ""}
-                    {r.display_name}
-                  </span>
-                </td>
-                <td style={td}>{r._value}</td>
-                {/* <td style={td}>{r.prev_count ?? 0}</td>
-                <td style={td}>{r.status === "hold" ? "정지" : "활동"}</td> */}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {err && <div style={{ color: "crimson", marginBottom: 10 }}>{err}</div>}
 
-      <div style={{ marginTop: 10, fontSize: 12, opacity: 0.75 }}>
-        * 참여횟수는 “해당 이벤트 참석자 수가 2명 이상”일 때만 인정됩니다.
+      <div style={{ position: "relative" }}>
+        {loading && (
+          <div style={overlay}>
+            <div style={spinnerBox}>
+              <div style={spinner} />
+              <div style={{ fontSize: 12, marginTop: 8, fontWeight: 800 }}>불러오는 중...</div>
+            </div>
+          </div>
+        )}
+
+        {tab === "total" ? (
+          <div style={card}>
+            <div style={cardTitle}>전체 활동참여 기준 순위</div>
+            <table style={table}>
+              <thead>
+                <tr style={theadTr}>
+                  <th style={th}>순위</th>
+                  <th style={th}>닉네임</th>
+                  <th style={th}>총 참여</th>
+                </tr>
+              </thead>
+              <tbody>
+                {totalRows.map((r) => {
+                  const isHold = r.status && r.status !== "active";
+                  return (
+                    <tr key={r.membership_id} style={{ background: isHold ? "white" : "white" }}>
+                      <td style={tdCenter}>{r.total_rank}</td>
+                      <td style={tdCenter}>
+                        <span style={{ color: "#FF00FF" }}>{r.role === "admin" ? "★" : ""}</span>
+                        {r.display_name}
+                      </td>
+                      <td style={tdCenter}>{r.total_attendances ?? 0}</td>
+                    </tr>
+                  );
+                })}
+                {totalRows.length === 0 && (
+                  <tr><td colSpan={4} style={{ ...tdCenter, padding: 14, opacity: 0.7 }}>데이터가 없습니다.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={card}>
+            <div style={cardTitle}>월별 참여 순위 · {fmtYM(monthStart)}</div>
+            <table style={table}>
+              <thead>
+                <tr style={theadTr}>
+                  <th style={th}>순위</th>
+                  <th style={th}>닉네임</th>
+                  <th style={th}>이번달</th>
+                  <th style={th}>전월</th>
+                  <th style={th}>변동</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthRows.map((r) => {
+                  const isHold = r.status && r.status !== "active";
+                  const mv = rankDeltaLabel(r.prev_rank, r.rank_delta);
+
+                  return (
+                    <tr key={r.membership_id} style={{ background: isHold ? "white" : "white" }}>
+                      <td style={tdCenter}>{r.month_rank}</td>
+                      <td style={tdCenter}>
+                        <span style={{ color: "#FF00FF" }}>{r.role === "admin" ? "★" : ""}</span>
+                        {r.display_name}
+                      </td>
+                      <td style={tdCenter}>{r.month_count ?? 0}</td>
+                      <td style={tdCenter}>{r.prev_count ?? 0}</td>
+                      <td style={{ ...tdCenter, fontWeight: 900, color: mv.color }}>{mv.text}</td>
+                    </tr>
+                  );
+                })}
+                {monthRows.length === 0 && (
+                  <tr><td colSpan={6} style={{ ...tdCenter, padding: 14, opacity: 0.7 }}>데이터가 없습니다.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+/* styles */
 const tabBtn: React.CSSProperties = {
   padding: "8px 12px",
   borderRadius: 999,
   border: "1px solid #cbd5e1",
-  background: "white",
-  cursor: "pointer",
   fontWeight: 900,
-  color: "black",
+  cursor: "pointer",
 };
+const tabBtnOn: React.CSSProperties = { background: "#111827", color: "white", borderColor: "#111827" };
+const tabBtnOff: React.CSSProperties = { background: "white", color: "black" };
 
-const tabOn: React.CSSProperties = {
-  borderColor: "#111827",
-  background: "#111827",
-  color: "white",
-};
-
-const monthInput: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 12,
+const input: React.CSSProperties = {
+  padding: "6px 10px",
+  borderRadius: 10,
   border: "1px solid #cbd5e1",
   background: "white",
   color: "black",
 };
 
-const tableWrap: React.CSSProperties = {
-  width: "100%",
-  overflowX: "auto",
+const card: React.CSSProperties = {
   border: "1px solid #e5e7eb",
-  borderRadius: 12,
+  borderRadius: 14,
+  padding: 12,
+  background: "white",
+};
+
+const cardTitle: React.CSSProperties = {
+  fontWeight: 900,
+  marginBottom: 10,
 };
 
 const table: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
-  minWidth: 400,
-  background: "white",
+  fontSize: 13,
+};
+
+const theadTr: React.CSSProperties = {
+  background: "#002060",
+  color: "white",
 };
 
 const th: React.CSSProperties = {
+  padding: "10px 8px",
+  textAlign: "center",
+  borderRight: "1px solid black",
+  whiteSpace: "nowrap",
+};
+
+const tdCenter: React.CSSProperties = {
+  padding: "8px 8px",
+  textAlign: "center",
+  borderTop: "1px solid #e5e7eb",
+  whiteSpace: "nowrap",
+  color: "black",
+};
+
+const tdLeft: React.CSSProperties = {
+  ...tdCenter,
   textAlign: "left",
-  padding: "10px 12px",
-  borderBottom: "1px solid #e5e7eb",
-  fontSize: 12,
-  opacity: 0.85,
-  whiteSpace: "nowrap",
 };
 
-const td: React.CSSProperties = {
-  padding: "10px 12px",
-  borderBottom: "1px solid #f1f5f9",
-  fontSize: 14,
-  whiteSpace: "nowrap",
+const overlay: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  background: "rgba(255,255,255,0.6)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: 14,
+  zIndex: 20,
 };
 
-const trHold: React.CSSProperties = {
-  background: "#FEF3C7",
+const spinnerBox: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  padding: 14,
+  borderRadius: 14,
+  background: "white",
+  border: "1px solid #e5e7eb",
+};
+
+const spinner: React.CSSProperties = {
+  width: 28,
+  height: 28,
+  borderRadius: 999,
+  border: "3px solid #cbd5e1",
+  borderTopColor: "#111827",
+  animation: "spin 0.9s linear infinite",
 };
