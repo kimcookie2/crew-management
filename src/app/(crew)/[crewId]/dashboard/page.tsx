@@ -167,7 +167,7 @@ export default async function Dashboard({
                     <td style={tdCenter}>{r.prev_count ?? 0}</td>
 
                     {/* ✅ 정지 사유(note) 표시 */}
-                    <td style={tdCenter}>{r.note ?? ""}</td>
+                    <td style={tdCenter}>{r.display_note ?? ""}</td>
                   </tr>
                 );
               })}
