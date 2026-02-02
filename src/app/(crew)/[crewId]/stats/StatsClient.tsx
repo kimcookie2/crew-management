@@ -1,8 +1,9 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import * as htmlToImage from "html-to-image";
 
 type TotalRow = {
   membership_id: string;
@@ -30,9 +31,6 @@ type Tab = "total" | "month";
 function ymdToday() {
   return new Date().toISOString().slice(0, 10);
 }
-function monthStartFromYmd(ymd: string) {
-  return `${ymd.slice(0, 7)}-01`;
-}
 function monthStartFromYm(ym: string) {
   // ym: "2026-01"
   return `${ym}-01`;
@@ -40,12 +38,6 @@ function monthStartFromYm(ym: string) {
 function fmtYM(monthStart: string) {
   const d = new Date(`${monthStart}T00:00:00`);
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
-}
-function diffBadge(curr: number, prev: number) {
-  const d = (curr ?? 0) - (prev ?? 0);
-  if (d > 0) return `▲${d}`;
-  if (d < 0) return `▼${Math.abs(d)}`;
-  return "-";
 }
 
 export default function StatsClient({ crewId }: { crewId: string }) {
@@ -62,12 +54,16 @@ export default function StatsClient({ crewId }: { crewId: string }) {
   const [totalRows, setTotalRows] = useState<TotalRow[]>([]);
   const [monthRows, setMonthRows] = useState<MonthRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const monthStart = useMemo(() => monthStartFromYm(ym), [ym]);
 
+  // ✅ 캡처용 ref
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
+
   async function loadTotal() {
-    console.log("loadTotal")
     setLoading(true);
     setErr(null);
     const { data, error } = await sb.rpc("get_crew_stats_total_rank", {
@@ -80,7 +76,6 @@ export default function StatsClient({ crewId }: { crewId: string }) {
   }
 
   async function loadMonth() {
-    console.log("loadMonth")
     setLoading(true);
     setErr(null);
     const { data, error } = await sb.rpc("get_crew_stats_month_rank", {
@@ -107,9 +102,108 @@ export default function StatsClient({ crewId }: { crewId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, asof, monthStart, crewId]);
 
+  // ✅ 내보내기
+  async function onExport() {
+    if (!scrollBoxRef.current || !captureRef.current) return;
+
+    setBusy(true);
+
+    const scrollBox = scrollBoxRef.current;
+    const el = captureRef.current;
+
+    const prevBox = {
+      overflow: scrollBox.style.overflow,
+      overflowX: scrollBox.style.overflowX,
+      overflowY: scrollBox.style.overflowY,
+      maxHeight: scrollBox.style.maxHeight,
+      height: scrollBox.style.height,
+      width: scrollBox.style.width,
+    };
+
+    const prevEl = {
+      width: el.style.width,
+      minWidth: el.style.minWidth,
+      maxWidth: el.style.maxWidth,
+    };
+
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+
+      // 스크롤 제한 풀기
+      scrollBox.style.overflow = "visible";
+      scrollBox.style.overflowX = "visible";
+      scrollBox.style.overflowY = "visible";
+      scrollBox.style.maxHeight = "none";
+      scrollBox.style.height = "auto";
+
+      // 레이아웃 반영
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const fullW = scrollBox.scrollWidth + 10;
+      const fullH = scrollBox.scrollHeight + 10;
+
+      // 캡처 DOM을 강제로 전체 폭으로
+      el.style.maxWidth = "none";
+      el.style.width = `${fullW}px`;
+      el.style.minWidth = `${fullW}px`;
+
+      const MAX = 16000;
+      const pr = Math.min(2, MAX / fullW, MAX / fullH);
+
+      const dataUrl = await htmlToImage.toPng(el, {
+        cacheBust: true,
+        pixelRatio: pr,
+        backgroundColor: "white",
+        width: fullW,
+        height: fullH,
+        style: {
+          transform: "scale(1)",
+          transformOrigin: "top left",
+        },
+      });
+
+      const title =
+        tab === "total"
+          ? `stats-total-${crewId}-${asof}`
+          : `stats-month-${crewId}-${monthStart}-${asof}`;
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${title}.png`;
+      a.click();
+    } catch (e: any) {
+      alert(e?.message ?? "내보내기에 실패했습니다.");
+    } finally {
+      // 원복
+      scrollBox.style.overflow = prevBox.overflow;
+      scrollBox.style.overflowX = prevBox.overflowX;
+      scrollBox.style.overflowY = prevBox.overflowY;
+      scrollBox.style.maxHeight = prevBox.maxHeight;
+      scrollBox.style.height = prevBox.height;
+      scrollBox.style.width = prevBox.width;
+
+      el.style.width = prevEl.width;
+      el.style.minWidth = prevEl.minWidth;
+      el.style.maxWidth = prevEl.maxWidth;
+
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ color: "black" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, justifyContent: "space-between" }}>
+      {/* ✅ 상단 컨트롤 + 내보내기 */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 12,
+          justifyContent: "space-between",
+          padding: "0 16px",
+        }}
+      >
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={() => setTab("total")}
@@ -126,7 +220,7 @@ export default function StatsClient({ crewId }: { crewId: string }) {
         </div>
 
         {tab === "month" && (
-          <div style={{  }}>
+          <div>
             <input
               type="month"
               value={ym}
@@ -135,93 +229,155 @@ export default function StatsClient({ crewId }: { crewId: string }) {
             />
           </div>
         )}
-        <div style={{ flex: 1 }} />
       </div>
 
-      
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 12,
+          justifyContent: "end",
+          padding: "0 16px",
+        }}
+      >
+        <div style={{ display: "flex", gap: 8, alignItems: "center"}}>
+          <button
+            onClick={onExport}
+            disabled={busy}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: "1px solid #cbd5e1",
+              background: "white",
+              cursor: "pointer",
+              fontWeight: 900,
+              color: "black",
+            }}
+          >
+            {busy ? "내보내는 중..." : "내보내기"}
+          </button>
+        </div>
+      </div>
 
-      {err && <div style={{ color: "crimson", marginBottom: 10 }}>{err}</div>}
+      {err && <div style={{ color: "crimson", marginBottom: 10, padding: "0 16px" }}>{err}</div>}
 
-      <div style={{ position: "relative" }}>
-        {loading && (
-          <div style={overlay}>
-            <div style={spinnerBox}>
-              <div style={spinner} />
-              <div style={{ fontSize: 12, marginTop: 8, fontWeight: 800 }}>불러오는 중...</div>
+      {/* ✅ 스크롤 래퍼 + 캡처 대상 */}
+      <div
+        ref={scrollBoxRef}
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          overflowX: "auto",
+          overflowY: "auto",
+          background: "white",
+          padding: "0 16px",
+        }}
+      >
+        <div ref={captureRef} style={{ background: "white", color: "black", padding: "10px 0" }}>
+          <div style={{ position: "relative" }}>
+            {loading && (
+              <div style={overlay}>
+                <div style={spinnerBox}>
+                  <div style={spinner} />
+                  <div style={{ fontSize: 12, marginTop: 8, fontWeight: 800 }}>불러오는 중...</div>
+                </div>
+              </div>
+            )}
+
+            {tab === "total" ? (
+              <div style={card}>
+                <div style={cardTitle}>전체 활동참여 기준 순위</div>
+                <table style={table}>
+                  <thead>
+                    <tr style={theadTr}>
+                      <th style={th}>순위</th>
+                      <th style={th}>닉네임</th>
+                      <th style={th}>총 참여</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {totalRows.map((r) => {
+                      const isHold = r.status && r.status !== "active";
+                      return (
+                        <tr key={r.membership_id} style={{ background: isHold ? "white" : "white" }}>
+                          <td style={tdCenter}>{r.total_rank}</td>
+                          <td style={tdCenter}>
+                            <span style={{ color: "#FF00FF" }}>{r.role === "admin" ? "★" : ""}</span>
+                            {r.display_name}
+                          </td>
+                          <td style={tdCenter}>{r.total_attendances ?? 0}</td>
+                        </tr>
+                      );
+                    })}
+                    {totalRows.length === 0 && (
+                      <tr>
+                        <td colSpan={3} style={{ ...tdCenter, padding: 14, opacity: 0.7 }}>
+                          데이터가 없습니다.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={card}>
+                <div style={cardTitle}>월별 참여 순위 · {fmtYM(monthStart)}</div>
+                <table style={table}>
+                  <thead>
+                    <tr style={theadTr}>
+                      <th style={th}>순위</th>
+                      <th style={th}>닉네임</th>
+                      <th style={th}>이번달</th>
+                      <th style={th}>전월</th>
+                      <th style={th}>변동</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthRows.map((r) => {
+                      const isHold = r.status && r.status !== "active";
+                      const mv = rankDeltaLabel(r.prev_rank, r.rank_delta);
+
+                      return (
+                        <tr key={r.membership_id} style={{ background: isHold ? "white" : "white" }}>
+                          <td style={tdCenter}>{r.month_rank}</td>
+                          <td style={tdCenter}>
+                            <span style={{ color: "#FF00FF" }}>{r.role === "admin" ? "★" : ""}</span>
+                            {r.display_name}
+                          </td>
+                          <td style={tdCenter}>{r.month_count ?? 0}</td>
+                          <td style={tdCenter}>{r.prev_count ?? 0}</td>
+                          <td style={{ ...tdCenter, fontWeight: 900, color: mv.color }}>{mv.text}</td>
+                        </tr>
+                      );
+                    })}
+                    {monthRows.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ ...tdCenter, padding: 14, opacity: 0.7 }}>
+                          데이터가 없습니다.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ fontSize: 12, marginTop: 10, color: "black", opacity: 0.9 }}>
+              ※ 통계는 2인 이상 참여한 이벤트만, 하루 1회 인정 기준으로 집계됩니다.
             </div>
           </div>
-        )}
-
-        {tab === "total" ? (
-          <div style={card}>
-            <div style={cardTitle}>전체 활동참여 기준 순위</div>
-            <table style={table}>
-              <thead>
-                <tr style={theadTr}>
-                  <th style={th}>순위</th>
-                  <th style={th}>닉네임</th>
-                  <th style={th}>총 참여</th>
-                </tr>
-              </thead>
-              <tbody>
-                {totalRows.map((r) => {
-                  const isHold = r.status && r.status !== "active";
-                  return (
-                    <tr key={r.membership_id} style={{ background: isHold ? "white" : "white" }}>
-                      <td style={tdCenter}>{r.total_rank}</td>
-                      <td style={tdCenter}>
-                        <span style={{ color: "#FF00FF" }}>{r.role === "admin" ? "★" : ""}</span>
-                        {r.display_name}
-                      </td>
-                      <td style={tdCenter}>{r.total_attendances ?? 0}</td>
-                    </tr>
-                  );
-                })}
-                {totalRows.length === 0 && (
-                  <tr><td colSpan={4} style={{ ...tdCenter, padding: 14, opacity: 0.7 }}>데이터가 없습니다.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={card}>
-            <div style={cardTitle}>월별 참여 순위 · {fmtYM(monthStart)}</div>
-            <table style={table}>
-              <thead>
-                <tr style={theadTr}>
-                  <th style={th}>순위</th>
-                  <th style={th}>닉네임</th>
-                  <th style={th}>이번달</th>
-                  <th style={th}>전월</th>
-                  <th style={th}>변동</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthRows.map((r) => {
-                  const isHold = r.status && r.status !== "active";
-                  const mv = rankDeltaLabel(r.prev_rank, r.rank_delta);
-
-                  return (
-                    <tr key={r.membership_id} style={{ background: isHold ? "white" : "white" }}>
-                      <td style={tdCenter}>{r.month_rank}</td>
-                      <td style={tdCenter}>
-                        <span style={{ color: "#FF00FF" }}>{r.role === "admin" ? "★" : ""}</span>
-                        {r.display_name}
-                      </td>
-                      <td style={tdCenter}>{r.month_count ?? 0}</td>
-                      <td style={tdCenter}>{r.prev_count ?? 0}</td>
-                      <td style={{ ...tdCenter, fontWeight: 900, color: mv.color }}>{mv.text}</td>
-                    </tr>
-                  );
-                })}
-                {monthRows.length === 0 && (
-                  <tr><td colSpan={6} style={{ ...tdCenter, padding: 14, opacity: 0.7 }}>데이터가 없습니다.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* ✅ spinner keyframes (프로젝트에 글로벌로 없으면 추가 필요) */}
+      <style jsx global>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -281,11 +437,6 @@ const tdCenter: React.CSSProperties = {
   borderTop: "1px solid #e5e7eb",
   whiteSpace: "nowrap",
   color: "black",
-};
-
-const tdLeft: React.CSSProperties = {
-  ...tdCenter,
-  textAlign: "left",
 };
 
 const overlay: React.CSSProperties = {
