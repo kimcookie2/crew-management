@@ -123,12 +123,15 @@ export default async function Dashboard({
                 if (r.role === "admin") remainNum = 40;
 
                 const bg = isHold ? "#E7E6E6" : idx % 2 === 0 ? "#DDEBF7" : "white";
+                const bgImgSrc = r.role === "admin" ? "/bgImg_test.png" : "";
 
                 return (
                   <tr key={r.membership_id} style={{ background: bg, borderTop: "1px solid #d7dbe3", color: "black" }}>
                     <td style={tdCenter}>{idx + 1}</td>
-                    <td style={tdCenter}>
-                      <span style={{ color: idx === 0 ? "blue" : "#FF00FF"}}>{r.role === "admin" ? "★" : ""}</span>
+                    <td style={{
+                      ...tdCenter,
+                      }}>
+                      <span style={{ color: r.display_name === "시우" ? "blue" : "#FF00FF"}}>{r.role === "admin" ? "★" : ""}</span>
                       {r.display_name}
                     </td>
                     <td style={tdCenter}>{fmtYMD(r.joined_at)}</td>
