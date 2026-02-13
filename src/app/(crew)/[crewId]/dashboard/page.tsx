@@ -120,7 +120,7 @@ export default async function Dashboard({
               {rows.map((r: any, idx: number) => {
                 const isHold = r.status && r.status !== "active";
                 let remainNum = typeof r.remain_days === "number" ? r.remain_days : 0;
-                if (r.role === "admin") remainNum = 40;
+                if (r.role === "admin") remainNum = 100;
 
                 const bg = isHold ? "#E7E6E6" : idx % 2 === 0 ? "#DDEBF7" : "white";
                 const bgImgSrc = r.role === "admin" ? "/bgImg_test.png" : "";
