@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -13,27 +14,50 @@ type Row = {
   joined_at: string | null;
 };
 
-type ModalMode = "add" | "hold" | "leave" | "kick" | "drop";
+type ModalMode = "add" | "hold" | "leave" | "kick" | "drop" | "inactive" | "restore";
 
 type ModalState =
   | { open: false }
   | {
       open: true;
       mode: ModalMode;
-      target?: Row; // add는 없음
-      date: string; // YYYY-MM-DD
-      nickname: string; // add용
-      reason: string; // 선택
+      target?: Row;
+      date: string;
+      nickname: string;
+      reason: string;
     };
 
 const todayYmd = () => new Date().toISOString().slice(0, 10);
 
-const statusLabel = (s: string) => (s === "hold" ? "정지" : s === "active" ? "활동" : s);
-const modeLabel = (m: ModalMode) =>
-  m === "add" ? "크루원 추가" : m === "hold" ? "정지" : m === "leave" ? "퇴장" : m === "kick" ? "추방" : "이탈";
+function statusLabel(s: string) {
+  if (s === "hold") return "정지";
+  if (s === "active") return "활동";
+  if (s === "inactive") return "임시퇴장";
+  if (s === "left") return "탈퇴";
+  if (s === "kicked") return "추방";
+  if (s === "dropped") return "이탈";
+  return s;
+}
 
-export default function CrewManagementClient({ crewId, initialRows }: { crewId: string; initialRows: Row[] }) {
+function modeLabel(m: ModalMode) {
+  if (m === "add") return "크루원 추가";
+  if (m === "hold") return "정지";
+  if (m === "leave") return "탈퇴";
+  if (m === "kick") return "추방";
+  if (m === "drop") return "이탈";
+  if (m === "inactive") return "임시퇴장";
+  return "복귀";
+}
+
+export default function CrewManagementClient({
+  crewId,
+  initialRows,
+}: {
+  crewId: string;
+  initialRows: Row[];
+}) {
   const sb = supabaseBrowser();
+
   const [rows, setRows] = useState<Row[]>(initialRows);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
@@ -52,11 +76,24 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
   }
 
   function openAdd() {
-    setModal({ open: true, mode: "add", date: todayYmd(), nickname: "", reason: "" });
+    setModal({
+      open: true,
+      mode: "add",
+      date: todayYmd(),
+      nickname: "",
+      reason: "",
+    });
   }
 
   function openAction(mode: Exclude<ModalMode, "add">, target: Row) {
-    setModal({ open: true, mode, target, date: todayYmd(), nickname: "", reason: "" });
+    setModal({
+      open: true,
+      mode,
+      target,
+      date: todayYmd(),
+      nickname: "",
+      reason: "",
+    });
   }
 
   async function confirmModal() {
@@ -66,13 +103,16 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
     try {
       if (modal.mode === "add") {
         const name = modal.nickname.trim();
-        if (!name) return alert("닉네임을 입력해주세요.");
+        if (!name) {
+          alert("닉네임을 입력해주세요.");
+          return;
+        }
 
         const { error } = await sb.rpc("admin_add_member", {
           p_crew_id: crewId,
           p_display_name: name,
           p_joined_at: modal.date || null,
-          p_note: modal.reason.trim() || null, // add에서는 reason을 비고로 사용
+          p_note: modal.reason.trim() || null,
           p_role: "member",
         });
         if (error) return alert(error.message);
@@ -89,11 +129,28 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
         if (error) return alert(error.message);
       }
 
+      if (modal.mode === "inactive") {
+        const target = modal.target!;
+        const { error } = await sb.rpc("set_member_inactive", {
+          p_membership_id: target.membership_id,
+          p_reason: modal.reason.trim() || null,
+          p_effective_date: modal.date || null,
+        });
+        if (error) return alert(error.message);
+      }
+
+      if (modal.mode === "restore") {
+        const target = modal.target!;
+        const { error } = await sb.rpc("restore_member_active", {
+          p_membership_id: target.membership_id,
+          p_reason: modal.reason.trim() || null,
+          p_effective_date: modal.date || null,
+        });
+        if (error) return alert(error.message);
+      }
+
       if (modal.mode === "leave" || modal.mode === "kick" || modal.mode === "drop") {
         const target = modal.target!;
-        const label = modeLabel(modal.mode);
-        if (!confirm(`정말 ${label} 처리할까요? (멤버십 + 참석기록 삭제)`)) return;
-
         const { error } = await sb.rpc("remove_member_with_log", {
           p_membership_id: target.membership_id,
           p_exit_type: modal.mode,
@@ -110,38 +167,54 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
     }
   }
 
-  async function unhold(m: Row) {
+  async function unhold(r: Row) {
     if (!confirm("정지를 해제할까요?")) return;
     setBusy(true);
+
     const { error } = await sb.rpc("set_member_status", {
-      p_membership_id: m.membership_id,
+      p_membership_id: r.membership_id,
       p_status: "active",
       p_reason: null,
-      p_action_date: todayYmd(), // 해제는 오늘로 자동
+      p_action_date: todayYmd(),
     });
+
     setBusy(false);
     if (error) return alert(error.message);
     await refresh();
   }
 
   return (
-    <div style={{ padding: 0, color: "black" }}>
+    <div style={{ padding: 16, color: "black" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <h2 style={{ margin: 0 }}>크루원 관리</h2>
+        <div style={{ flex: 1 }} />
+        <Link
+          href={`/${crewId}/crew-hidden`}
+          style={{ ...btn, textDecoration: "none", display: "inline-block" }}
+        >
+          숨김 멤버
+        </Link>
+      </div>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 12, height: "3rem", fontSize: "0.8rem" }}>
+      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="닉네임 검색"
           style={{ flex: 1, padding: 10, borderRadius: 12, border: "1px solid #cbd5e1" }}
         />
-        <button onClick={openAdd} disabled={busy} style={{...btn}}>
-          크루원 추가
+        <button onClick={openAdd} disabled={busy} style={btn}>
+          + 추가
+        </button>
+        <button onClick={refresh} disabled={busy} style={btn}>
+          새로고침
         </button>
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         {filtered.map((r) => {
           const isHold = r.status === "hold";
+
           return (
             <div
               key={r.membership_id}
@@ -161,7 +234,7 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
               </div>
 
               <div style={{ marginTop: 6, fontSize: 13, opacity: 0.85 }}>
-                입장: {r.joined_at ?? "-"}
+                입장: {r.joined_at ?? "-"} · 권한: {r.role ?? "member"}
               </div>
 
               {r.note && (
@@ -181,13 +254,19 @@ export default function CrewManagementClient({ crewId, initialRows }: { crewId: 
                   </button>
                 )}
 
-                <button style={btn} disabled={busy} onClick={() => openAction("leave", r)}>
-                  퇴장
+                <button style={btn} disabled={busy} onClick={() => openAction("inactive", r)}>
+                  임시퇴장
                 </button>
+
+                <button style={btn} disabled={busy} onClick={() => openAction("leave", r)}>
+                  탈퇴
+                </button>
+
                 <button style={btnDanger} disabled={busy} onClick={() => openAction("kick", r)}>
                   추방
                 </button>
-                <button style={btnDanger} disabled={busy} onClick={() => openAction("drop", r)}>
+
+                <button style={btn} disabled={busy} onClick={() => openAction("drop", r)}>
                   이탈
                 </button>
               </div>
@@ -249,9 +328,7 @@ function ActionModal({
               <input
                 value={modal.nickname}
                 onChange={(e) =>
-                  setModal((prev) =>
-                    prev.open ? { ...prev, nickname: e.target.value } : prev
-                  )
+                  setModal((prev) => (prev.open ? { ...prev, nickname: e.target.value } : prev))
                 }
                 style={input}
                 placeholder="예: 시우"
@@ -270,9 +347,8 @@ function ActionModal({
               style={input}
             />
           </label>
-          
-          {isAdd ? <></> : 
-            <label style={label}>
+
+          <label style={label}>
             사유(선택)
             <textarea
               value={modal.reason}
@@ -283,7 +359,6 @@ function ActionModal({
               placeholder="비워도 됩니다"
             />
           </label>
-          }
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -309,8 +384,15 @@ const btn: React.CSSProperties = {
   color: "black",
 };
 
-const btnWarn: React.CSSProperties = { ...btn, borderColor: "#f59e0b" };
-const btnDanger: React.CSSProperties = { ...btn, borderColor: "#ef4444" };
+const btnWarn: React.CSSProperties = {
+  ...btn,
+  borderColor: "#f59e0b",
+};
+
+const btnDanger: React.CSSProperties = {
+  ...btn,
+  borderColor: "#ef4444",
+};
 
 const btnFull: React.CSSProperties = {
   flex: 1,
@@ -361,5 +443,15 @@ const xBtn: React.CSSProperties = {
   color: "black",
 };
 
-const label: React.CSSProperties = { display: "grid", gap: 6, fontWeight: 800, fontSize: 13 };
-const input: React.CSSProperties = { padding: 10, borderRadius: 12, border: "1px solid #cbd5e1" };
+const label: React.CSSProperties = {
+  display: "grid",
+  gap: 6,
+  fontWeight: 800,
+  fontSize: 13,
+};
+
+const input: React.CSSProperties = {
+  padding: 10,
+  borderRadius: 12,
+  border: "1px solid #cbd5e1",
+};
