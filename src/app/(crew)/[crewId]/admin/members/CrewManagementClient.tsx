@@ -206,9 +206,6 @@ export default function CrewManagementClient({
         <button onClick={openAdd} disabled={busy} style={btn}>
           + 추가
         </button>
-        <button onClick={refresh} disabled={busy} style={btn}>
-          새로고침
-        </button>
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>

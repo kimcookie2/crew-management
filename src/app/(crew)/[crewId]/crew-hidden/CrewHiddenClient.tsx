@@ -68,13 +68,6 @@ export default function CrewHiddenClient({
     <div style={{ padding: 16, color: "black" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <h2 style={{ margin: 0 }}>숨김 멤버</h2>
-        <div style={{ flex: 1 }} />
-        <Link
-          href={`/${crewId}/crew-management`}
-          style={{ ...btn, textDecoration: "none", display: "inline-block" }}
-        >
-          크루원 관리
-        </Link>
       </div>
 
       <div style={{ marginTop: 12 }}>
