@@ -192,7 +192,7 @@ export default function CrewManagementClient({
           href={`/${crewId}/crew-hidden`}
           style={{ ...btn, textDecoration: "none", display: "inline-block" }}
         >
-          숨김 멤버
+          임시퇴장 관리
         </Link>
       </div>
 
