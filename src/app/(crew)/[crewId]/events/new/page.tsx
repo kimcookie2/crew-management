@@ -110,8 +110,8 @@ export default function NewEventPage() {
       return;
     }
     
-    // 크루 대시보드 페이지로 이동
-    router.push(`/${crewId}/dashboard`);
+    // 모임 달력 페이지로 이동
+    router.push(`/${crewId}/events`);
   }
 
   return (
