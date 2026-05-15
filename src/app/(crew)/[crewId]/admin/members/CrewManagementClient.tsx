@@ -14,7 +14,7 @@ type Row = {
   joined_at: string | null;
 };
 
-type ModalMode = "add" | "hold" | "leave" | "kick" | "drop" | "inactive" | "restore";
+type ModalMode = "add" | "hold" | "leave" | "kick" | "drop" | "inactive" | "restore" | "note";
 
 type ModalState =
   | { open: false }
@@ -46,6 +46,7 @@ function modeLabel(m: ModalMode) {
   if (m === "kick") return "추방";
   if (m === "drop") return "이탈";
   if (m === "inactive") return "임시퇴장";
+  if (m === "note") return "비고 수정";
   return "복귀";
 }
 
@@ -93,6 +94,17 @@ export default function CrewManagementClient({
       date: todayYmd(),
       nickname: "",
       reason: "",
+    });
+  }
+
+  function openNote(target: Row) {
+    setModal({
+      open: true,
+      mode: "note",
+      target,
+      date: todayYmd(),
+      nickname: "",
+      reason: target.note ?? "",
     });
   }
 
@@ -145,6 +157,15 @@ export default function CrewManagementClient({
           p_membership_id: target.membership_id,
           p_reason: modal.reason.trim() || null,
           p_effective_date: modal.date || null,
+        });
+        if (error) return alert(error.message);
+      }
+
+      if (modal.mode === "note") {
+        const target = modal.target!;
+        const { error } = await sb.rpc("update_member_note", {
+          p_membership_id: target.membership_id,
+          p_note: modal.reason.trim() || null,
         });
         if (error) return alert(error.message);
       }
@@ -241,6 +262,10 @@ export default function CrewManagementClient({
               )}
 
               <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <button style={btn} disabled={busy} onClick={() => openNote(r)}>
+                  비고 수정
+                </button>
+
                 {!isHold ? (
                   <button style={btnWarn} disabled={busy} onClick={() => openAction("hold", r)}>
                     정지
@@ -299,6 +324,7 @@ function ActionModal({
   onConfirm: () => void;
 }) {
   const isAdd = modal.mode === "add";
+  const isNote = modal.mode === "note";
   const title = modeLabel(modal.mode);
 
   return (
@@ -333,27 +359,29 @@ function ActionModal({
             </label>
           )}
 
-          <label style={label}>
-            {isAdd ? "입장일" : "처리일"}
-            <input
-              type="date"
-              value={modal.date}
-              onChange={(e) =>
-                setModal((prev) => (prev.open ? { ...prev, date: e.target.value } : prev))
-              }
-              style={input}
-            />
-          </label>
+          {!isNote && (
+            <label style={label}>
+              {isAdd ? "입장일" : "처리일"}
+              <input
+                type="date"
+                value={modal.date}
+                onChange={(e) =>
+                  setModal((prev) => (prev.open ? { ...prev, date: e.target.value } : prev))
+                }
+                style={input}
+              />
+            </label>
+          )}
 
           <label style={label}>
-            사유(선택)
+            {isNote ? "비고" : "사유(선택)"}
             <textarea
               value={modal.reason}
               onChange={(e) =>
                 setModal((prev) => (prev.open ? { ...prev, reason: e.target.value } : prev))
               }
               style={{ ...input, minHeight: 84, resize: "vertical" }}
-              placeholder="비워도 됩니다"
+              placeholder={isNote ? "비고 내용 입력" : "비워도 됩니다"}
             />
           </label>
         </div>
