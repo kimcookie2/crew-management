@@ -46,6 +46,12 @@ function ymdLocal(d: Date) {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
+
+// 암장 통계 집계 시작일(모임에 암장을 기록하기 시작한 날)
+const GYM_DATA_START = "2025-11-21";
+function toDot(ymd: string) {
+  return ymd.split("-").join("."); // YYYY-MM-DD → YYYY.MM.dd
+}
 function monthStartFromYm(ym: string) {
   // ym: "2026-01"
   return `${ym}-01`;
@@ -239,6 +245,8 @@ export default function StatsClient({ crewId }: { crewId: string }) {
       width: el.style.width,
       minWidth: el.style.minWidth,
       maxWidth: el.style.maxWidth,
+      padding: el.style.padding,
+      boxSizing: el.style.boxSizing,
     };
 
     try {
@@ -255,10 +263,13 @@ export default function StatsClient({ crewId }: { crewId: string }) {
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       await new Promise((r) => requestAnimationFrame(() => r(null)));
 
-      const fullW = scrollBox.scrollWidth + 10;
+      const SIDE_PAD = 20; // 내보내기 이미지 좌우 여백
+      const fullW = scrollBox.scrollWidth + SIDE_PAD * 2 + 10;
       const fullH = scrollBox.scrollHeight + 10;
 
-      // 캡처 DOM을 강제로 전체 폭으로
+      // 캡처 DOM을 강제로 전체 폭으로 (+ 좌우 여백)
+      el.style.boxSizing = "border-box";
+      el.style.padding = `10px ${SIDE_PAD}px`;
       el.style.maxWidth = "none";
       el.style.width = `${fullW}px`;
       el.style.minWidth = `${fullW}px`;
@@ -303,6 +314,8 @@ export default function StatsClient({ crewId }: { crewId: string }) {
       el.style.width = prevEl.width;
       el.style.minWidth = prevEl.minWidth;
       el.style.maxWidth = prevEl.maxWidth;
+      el.style.padding = prevEl.padding;
+      el.style.boxSizing = prevEl.boxSizing;
 
       setBusy(false);
     }
@@ -342,17 +355,26 @@ export default function StatsClient({ crewId }: { crewId: string }) {
           </button>
         </div>
 
-        {tab === "month" && (
-          <div>
-            <input
-              type="month"
-              value={ym}
-              onChange={(e) => setYm(e.target.value)}
-              style={input}
-            />
-          </div>
-        )}
       </div>
+
+      {tab === "month" && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            marginBottom: 12,
+            padding: "0 16px",
+          }}
+        >
+          <input
+            type="month"
+            value={ym}
+            onChange={(e) => setYm(e.target.value)}
+            style={input}
+          />
+        </div>
+      )}
 
       {tab === "gym" && (
         <div
@@ -387,20 +409,6 @@ export default function StatsClient({ crewId }: { crewId: string }) {
               <option key={m} value={String(m).padStart(2, "0")}>{m}월</option>
             ))}
           </select>
-
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => { setFrom(e.target.value); setYear(""); setMonth(""); }}
-            style={input}
-          />
-          <span>~</span>
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => { setTo(e.target.value); setYear(""); setMonth(""); }}
-            style={input}
-          />
         </div>
       )}
 
@@ -601,9 +609,16 @@ export default function StatsClient({ crewId }: { crewId: string }) {
             )}
 
             <div style={{ fontSize: 12, marginTop: 10, color: "black", opacity: 0.9 }}>
-              {tab === "gym"
-                ? "※ 2025.11.21 이후 생성된 모임에서 집계된 데이터입니다."
-                : "※ 통계는 2인 이상 참여한 이벤트만, 하루 1회 인정 기준으로 집계됩니다."}
+              {tab === "gym" ? (
+                <>
+                  <div>※ 2025.11.21 이후 생성된 모임에서 집계된 데이터입니다.</div>
+                  <div>
+                    ※ 집계 기간 : {toDot(from || GYM_DATA_START)} ~ {toDot(to || ymdLocal(new Date()))}
+                  </div>
+                </>
+              ) : (
+                "※ 통계는 2인 이상 참여한 이벤트만, 하루 1회 인정 기준으로 집계됩니다."
+              )}
             </div>
           </div>
         </div>
