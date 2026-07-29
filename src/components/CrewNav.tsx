@@ -15,6 +15,9 @@ export default function CrewNav({ crewId }: { crewId: string }) {
     (async () => {
       const { data, error } = await sb.rpc("get_my_crew_role", { p_crew_id: crewId });
       if (!error) setIsAdmin(data === "admin");
+      // 마지막 접속 갱신 (10분 쓰로틀은 서버에서 처리)
+      // supabase-js 쿼리는 await/then 해야 실제 요청이 나감 → 반드시 await
+      await sb.rpc("touch_last_seen");
     })();
   }, [crewId]);
 
