@@ -27,7 +27,8 @@ export default function CrewNav({ crewId }: { crewId: string }) {
 
     if (isAdmin) {
       base.push({ href: `/${crewId}/events/new`, label: "모임등록" });
-      base.push({ href: `/${crewId}/admin`, label: "크루관리" }); 
+      base.push({ href: `/${crewId}/admin/gyms`, label: "암장관리" });
+      base.push({ href: `/${crewId}/admin`, label: "크루관리" });
     }
 
     base.push({ href: `/app`, label: "크루목록" });

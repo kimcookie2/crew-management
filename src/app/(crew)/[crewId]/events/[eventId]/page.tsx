@@ -4,9 +4,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import GymPicker from "@/components/GymPicker";
 
 type MemberRow = { id: string; display_name: string | null; status: string | null; role: string | null };
-type EventRow = { id: string; event_date: string; gym_name: string | null; crew_id: string };
+type EventRow = {
+  id: string;
+  event_date: string;
+  gym_id: string | null;
+  branch_id: string | null;
+  crew_id: string;
+};
 
 export default function EventEditPage() {
   const sb = supabaseBrowser();
@@ -17,7 +24,8 @@ export default function EventEditPage() {
 
   const [event, setEvent] = useState<EventRow | null>(null);
   const [date, setDate] = useState("");
-  const [gymName, setGymName] = useState("");
+  const [gymId, setGymId] = useState<string | null>(null);
+  const [branchId, setBranchId] = useState<string | null>(null);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [q, setQ] = useState("");
@@ -33,7 +41,7 @@ export default function EventEditPage() {
       // 이벤트 로드
       const { data: ev, error: evErr } = await sb
         .from("events")
-        .select("id, crew_id, event_date, gym_name")
+        .select("id, crew_id, event_date, gym_id, branch_id")
         .eq("id", eventId)
         .single();
 
@@ -43,7 +51,8 @@ export default function EventEditPage() {
       if (ev.crew_id !== crewId) return setMsg("크루가 일치하지 않습니다.");
       setEvent(ev as EventRow);
       setDate((ev as any).event_date);
-      setGymName((ev as any).gym_name ?? "");
+      setGymId((ev as any).gym_id ?? null);
+      setBranchId((ev as any).branch_id ?? null);
 
       // 멤버 목록
       const { data: ms, error: msErr } = await sb
@@ -93,7 +102,7 @@ export default function EventEditPage() {
   async function onSave() {
     if (!crewId || !eventId) return;
     if (!date) return setMsg("날짜를 선택해주세요.");
-    if (!gymName.trim()) return setMsg("장소를 입력해주세요.");
+    if (!gymId) return setMsg("암장을 선택해주세요.");
 
     setLoading(true);
     setMsg(null);
@@ -103,7 +112,8 @@ export default function EventEditPage() {
       p_crew_id: crewId,
       p_event_id: eventId,
       p_event_date: date,
-      p_gym_name: gymName.trim(),
+      p_gym_id: gymId,
+      p_branch_id: branchId,
     });
 
     if (uErr) {
@@ -156,10 +166,14 @@ export default function EventEditPage() {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={input} />
         </label>
 
-        <label style={label}>
-          장소
-          <input value={gymName} onChange={(e) => setGymName(e.target.value)} placeholder="예: 더클라임 연남" style={input} />
-        </label>
+        <GymPicker
+          gymId={gymId}
+          branchId={branchId}
+          onChange={({ gymId, branchId }) => {
+            setGymId(gymId);
+            setBranchId(branchId);
+          }}
+        />
       </div>
 
       <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import GymPicker from "@/components/GymPicker";
 
 type MemberRow = {
   id: string;
@@ -31,7 +32,8 @@ export default function NewEventPage() {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [gymName, setGymName] = useState("");
+  const [gymId, setGymId] = useState<string | null>(null);
+  const [branchId, setBranchId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function NewEventPage() {
   async function onSubmit() {
     if (!crewId) return;
     if (!date) return setMsg("날짜를 선택해주세요.");
-    if (!gymName.trim()) return setMsg("장소를 입력해주세요.");
+    if (!gymId) return setMsg("암장을 선택해주세요.");
     if (selectedIds.length === 0) return setMsg("참석자를 최소 1명 이상 선택해주세요.");
 
     setLoading(true);
@@ -99,7 +101,8 @@ export default function NewEventPage() {
     const { data, error } = await sb.rpc("create_event_and_attendances", {
       p_crew_id: crewId,
       p_event_date: date,
-      p_gym_name: gymName.trim(),
+      p_gym_id: gymId,
+      p_branch_id: branchId,
       p_membership_ids: selectedIds,
     });
 
@@ -115,46 +118,43 @@ export default function NewEventPage() {
   }
 
   return (
-    <div style={{ padding: 16, maxWidth: 900, margin: "0 auto", color: "black" }}>
-      <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        장소
-        <input
-          value={gymName}
-          onChange={(e) => setGymName(e.target.value)}
-          placeholder="예: 더클라임 연남"
-          style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 }}
-        />
-      </label>
+    <div style={{ padding: 16, maxWidth: 920, margin: "0 auto", color: "black" }}>
+      <h2 style={{ marginBottom: 12 }}>일정 등록</h2>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <label style={label}>
           날짜
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 }}
-            color="white"
-          />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={input} />
         </label>
-      </div>
 
-      <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        이름 검색
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="닉네임 입력"
-          style={{ padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 }}
+        <GymPicker
+          gymId={gymId}
+          branchId={branchId}
+          onChange={({ gymId, branchId }) => {
+            setGymId(gymId);
+            setBranchId(branchId);
+          }}
         />
-      </label>
-      <div style={{ fontSize: 13, opacity: 0.8 }}>
-        선택: {selectedIds.length}명
+      </div>
+      <div style={{ marginTop: 6, fontSize: 12, opacity: 0.7 }}>
+        * 목록에 없는 암장은 메뉴 &gt; 암장관리에서 먼저 등록하세요.
       </div>
 
-      {msg && <div style={{ marginTop: 12, color: "crimson" }}>{msg}</div>}
+      <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <label style={label}>
+          이름 검색
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="닉네임" style={input} />
+        </label>
 
-      <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+        <button style={btn} onClick={() => toggleAll(true)}>검색결과 전체선택</button>
+        <button style={btn} onClick={() => toggleAll(false)}>검색결과 전체해제</button>
+
+        <div style={{ fontSize: 13, opacity: 0.8 }}>선택: {selectedIds.length}명</div>
+      </div>
+
+      {msg && <div style={{ marginTop: 10, color: "crimson" }}>{msg}</div>}
+
+      <div style={{ marginTop: 12, border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: 10, background: "#f1f5f9", fontSize: 13 }}>
           멤버 목록 (체크하면 해당 날짜 참석 처리)
         </div>
@@ -193,19 +193,10 @@ export default function NewEventPage() {
       </div>
 
       <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
-        <button
-          onClick={onSubmit}
-          disabled={loading}
-          style={{ ...btn, padding: "10px 14px", fontWeight: 700 }}
-        >
-          {loading ? "저장 중..." : "선택 멤버 참석 저장"}
+        <button style={{ ...btn, fontWeight: 800 }} disabled={loading} onClick={onSubmit}>
+          {loading ? "저장 중..." : "등록"}
         </button>
-        <button
-          onClick={() => router.push(`/${crewId}/events`)}
-          style={btn}
-        >
-          목록으로
-        </button>
+        <button style={btn} onClick={() => router.push(`/${crewId}/events`)}>취소</button>
       </div>
     </div>
   );
@@ -219,3 +210,7 @@ const btn: React.CSSProperties = {
   cursor: "pointer",
   color: "black"
 };
+
+const label: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center" };
+const input: React.CSSProperties = { padding: 8, border: "1px solid #cbd5e1", borderRadius: 10 };
+
